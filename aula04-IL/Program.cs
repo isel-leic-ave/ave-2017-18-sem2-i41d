@@ -1,6 +1,6 @@
 using System;
 
-public class MyLib {
+public class Program {
     public static bool Palind(String msg) {
         if(msg.Length == 1) return true;
         if(msg[0] != msg[msg.Length-1]) return false;

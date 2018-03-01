@@ -4,12 +4,12 @@
   .ver 4:0:0:0
 }
 
-.assembly Dum
+.assembly ex2
 {
   .ver 0:0:0:0
 }
 
-.module Dum.dll
+.module ex2.dll
 
 .class public auto ansi beforefieldinit App extends [mscorlib]System.Object
 {
