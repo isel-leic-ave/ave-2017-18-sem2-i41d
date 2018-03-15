@@ -9,16 +9,26 @@ public interface MemberFormat {
 interface MemberData {
     void Data(object target);
 }
-class FieldData : MemberData {
-    readonly FieldInfo f;
-    readonly Logger logger;
-    readonly FormatAttribute fa;
-    public FieldData(Logger logger, FieldInfo f) {
-        this.f = f; 
-        this.logger = logger; 
-        this.fa = (FormatAttribute) f.GetCustomAttribute(typeof(FormatAttribute), false);
-    }
-    public void Data(object target) {
+abstract class AbstractMemberData : MemberData {
+	protected readonly Logger logger;
+	protected readonly FormatAttribute fa;
+	
+	public AbstractMemberData(Logger logger, MemberInfo info) {
+		this.logger = logger;
+		this.fa = (FormatAttribute) info.GetCustomAttribute(typeof(FormatAttribute), false);
+	}
+	
+	public abstract void Data(object target);
+}
+
+class FieldData : AbstractMemberData {
+	FieldInfo f;
+	
+    public FieldData(Logger logger, FieldInfo f) : base(logger,f) {
+		this.f = f;
+	}
+	
+    public override void Data(object target) {
         Console.Write(f.Name + ": ");
         if(fa != null)
             Console.Write(fa.Format(f.GetValue(target)));
@@ -27,13 +37,15 @@ class FieldData : MemberData {
         Console.Write(",");
     }
 }
-class MethodData : MemberData {
-    MethodInfo m;
-    Logger logger;
-    public MethodData(Logger logger, MethodInfo m) {this.m = m; this.logger = logger; }
-    public void Data(object target) {
+class MethodData : AbstractMemberData {
+	MethodInfo m;
+	
+    public MethodData(Logger logger, MethodInfo m) : base(logger,m) {
+		this.m = m;
+	}
+	
+    public override void Data(object target) {
         Console.Write(m.Name + ": ");
-        FormatAttribute fa = (FormatAttribute) m.GetCustomAttribute(typeof(FormatAttribute), false);
         if(fa != null)
             Console.Write(fa.Format(m.Invoke(target, new object[0])));
         else
@@ -41,13 +53,15 @@ class MethodData : MemberData {
         Console.Write(",");
     }
 }
-class PropertyData : MemberData {
-    PropertyInfo p;
-    Logger logger;
-    public PropertyData(Logger logger, PropertyInfo p) {this.p = p; this.logger = logger; }
-    public void Data(object target) {
+class PropertyData : AbstractMemberData {
+	PropertyInfo p;
+	
+    public PropertyData(Logger logger, PropertyInfo p) : base(logger,p) {
+		this.p = p;
+	}
+	
+    public override void Data(object target) {
         Console.Write(p.Name + ": ");
-        FormatAttribute fa = (FormatAttribute) p.GetCustomAttribute(typeof(FormatAttribute), false);
 		if(fa != null)
             Console.Write(fa.Format(p.GetValue(target)));
         else
