@@ -78,20 +78,20 @@ public class App {
         logger.Add(typeof(Student));
         logger.Add(typeof(Triangle));
         
-        logger.Log(new Point(5, 7));
-        logger.Log(new Point(11, 7));
-        logger.Log(new Point(7, 9));
+        Console.WriteLine(logger.Log(new Point(5, 7)));
+        Console.WriteLine(logger.Log(new Point(11, 7)));
+        Console.WriteLine(logger.Log(new Point(7, 9)));
         Console.WriteLine();
         
         Student s = new Student(154134, "Ze Manel", 5243, "ze", new DateTime(1990, 12,7));
-        logger.Log(s);
+        Console.WriteLine(logger.Log(s));
         Console.WriteLine();
         
         Point [] pts = {new Point(5, 7), new Point(11, 7), new Point(7, 9)};
-        logger.Log(pts);
+        Console.WriteLine(logger.Log(pts));
         
         Triangle t = new Triangle(new Point(5, 7), new Point(11, 7), new Point(7, 9));
-        logger.Log(t);
+        Console.WriteLine(logger.Log(t));
     }
     
 }

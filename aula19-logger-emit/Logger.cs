@@ -2,12 +2,13 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Text;
 
 public interface MemberFormat {
     string Format(object val);
 }
 interface MemberData {
-    void Data(object target);
+    string Data(object target);
 }
 abstract class AbstractMemberData : MemberData {
 	protected readonly Logger logger;
@@ -18,7 +19,7 @@ abstract class AbstractMemberData : MemberData {
 		this.fa = (FormatAttribute) info.GetCustomAttribute(typeof(FormatAttribute), false);
 	}
 	
-	public abstract void Data(object target);
+	public abstract string Data(object target);
 }
 
 class FieldData : AbstractMemberData {
@@ -28,13 +29,14 @@ class FieldData : AbstractMemberData {
 		this.f = f;
 	}
 	
-    public override void Data(object target) {
-        Console.Write(f.Name + ": ");
+    public override string Data(object target) {
+        StringBuilder str = new StringBuilder(f.Name + ": ");
         if(fa != null)
-            Console.Write(fa.Format(f.GetValue(target)));
+            str.Append(fa.Format(f.GetValue(target)));
         else
-            logger.Log(f.GetValue(target));
-        Console.Write(",");
+            str.Append(f.GetValue(target));
+        str.Append(",");
+        return str.ToString();
     }
 }
 class MethodData : AbstractMemberData {
@@ -44,13 +46,14 @@ class MethodData : AbstractMemberData {
 		this.m = m;
 	}
 	
-    public override void Data(object target) {
-        Console.Write(m.Name + ": ");
+    public override string Data(object target) {
+        StringBuilder str = new StringBuilder(m.Name + ": ");
         if(fa != null)
-            Console.Write(fa.Format(m.Invoke(target, new object[0])));
+            str.Append(fa.Format(m.Invoke(target, new object[0])));
         else
-            logger.Log(m.Invoke(target, new object[0]));
-        Console.Write(",");
+            str.Append(m.Invoke(target, new object[0]));
+        str.Append(",");
+        return str.ToString();
     }
 }
 class PropertyData : AbstractMemberData {
@@ -60,13 +63,14 @@ class PropertyData : AbstractMemberData {
 		this.p = p;
 	}
 	
-    public override void Data(object target) {
-        Console.Write(p.Name + ": ");
+    public override string Data(object target) {
+        StringBuilder str = new StringBuilder(p.Name + ": ");
 		if(fa != null)
-            Console.Write(fa.Format(p.GetValue(target)));
+            str.Append(fa.Format(p.GetValue(target)));
         else
-            logger.Log(p.GetValue(target));
-        Console.Write(",");
+            return str.Append(logger.Log(p.GetValue(target))).ToString();
+        str.Append(",");
+        return str.ToString();
     }
 }
 
@@ -135,33 +139,35 @@ public class Logger {
                 res.Add(new PropertyData(this, p));
         }
     }
-    public void Log(object target) {
+ 
+    public string Log(object target) {
         Type klass = target.GetType();
         Type key = klass.IsArray? klass.GetElementType() : klass;
         MemberData[] val;
         if(!members.TryGetValue(key, out val)) { // out val <=> &val
-            Console.Write(target.ToString());
-            return;
+            return target.ToString();
         }
-        if(!klass.IsArray) LogObject(val, target);
-        else LogArray(val, target);
+        if(!klass.IsArray) return LogObject(val, target);
+        else return LogArray(val, target);
     }
-    void LogArray(MemberData[] val, object target) {
+    string LogArray(MemberData[] val, object target) {
         bool isBidimensional = target.GetType().GetElementType().IsArray;
-        Console.Write("{");
+        StringBuilder str = new StringBuilder("{");
         IEnumerable src = (IEnumerable) target;
         foreach(object elem in src) {
-            if(isBidimensional) LogArray(val, elem); // via Iterator
-            else LogObject(val, elem);
+            if(isBidimensional) str.Append(LogArray(val, elem)); // via Iterator
+            else str.Append(LogObject(val, elem));
         }
-        Console.WriteLine("}");
+        str.Append("}");
+        return str.ToString();
     }
     
-    void LogObject(MemberData[] val, object target) {      
-        Console.Write("[");
+    string LogObject(MemberData[] val, object target) {      
+        StringBuilder str = new StringBuilder("[");
         foreach(MemberData m in val) {
-            m.Data(target);
+            str.Append(m.Data(target));
         }
-        Console.Write("]");
+        str.Append("]");
+        return str.ToString();
     }
 }
