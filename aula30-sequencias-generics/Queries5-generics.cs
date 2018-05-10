@@ -1,71 +1,93 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Text;
 using System.IO;
 
-delegate bool Predicate(object item);
+delegate bool Predicate<T>(T item);
 
-delegate object Function(object item);
+delegate R Function<T,R>(T item);
 
-class ConvertEnumerable : IEnumerable {
-    IEnumerable src;
-    Function mapper;
-    public ConvertEnumerable(IEnumerable src, Function mapper) {
+class ConvertEnumerable<T,R> : IEnumerable<R> {
+    IEnumerable<T> src;
+    Function<T,R> mapper;
+    public ConvertEnumerable(IEnumerable<T> src, Function<T,R> mapper) {
         this.src = src;
         this.mapper = mapper;
     }
-    public IEnumerator GetEnumerator() {
-        return new ConvertEnumerator(src, mapper);
+    IEnumerator IEnumerable.GetEnumerator() {
+        return this.GetEnumerator();
+    }
+    public IEnumerator<R> GetEnumerator() {
+        return new ConvertEnumerator<T,R>(src, mapper);
     }
 }
-class ConvertEnumerator : IEnumerator {
-    IEnumerator srcIter;
-    Function mapper;
-    public ConvertEnumerator(IEnumerable src, Function mapper) {
+class ConvertEnumerator<T,R> : IEnumerator<R> {
+    IEnumerator<T> srcIter;
+    Function<T,R> mapper;
+    public ConvertEnumerator(IEnumerable<T> src, Function<T,R> mapper) {
         this.srcIter = src.GetEnumerator();
         this.mapper = mapper;
     }
     public bool MoveNext() {
         return srcIter.MoveNext();
     }
-    public object Current {
+    object IEnumerator.Current {
+        get { return this.Current; }
+    }
+    
+    public R Current {
         get { return mapper(srcIter.Current); }
     }
     public void Reset() {
         srcIter.Reset();
     }
+    public void Dispose() {
+        srcIter.Dispose();
+    }
 }
 
-class FilterEnumerable : IEnumerable {
-    IEnumerable src;
-    Predicate p;
-    public FilterEnumerable(IEnumerable src, Predicate p) {
+class FilterEnumerable<T> : IEnumerable<T> {
+    IEnumerable<T> src;
+    Predicate<T> p;
+    public FilterEnumerable(IEnumerable<T> src, Predicate<T> p) {
         this.src = src;
         this.p = p;
     }
-    public IEnumerator GetEnumerator() {
-        return new FilterEnumerator(src, p);
+    IEnumerator IEnumerable.GetEnumerator() {
+        return this.GetEnumerator();
+    }
+    public IEnumerator<T> GetEnumerator() {
+        return new FilterEnumerator<T>(src, p);
     }
 }
-class FilterEnumerator : IEnumerator {
-    IEnumerator srcIter;
-    Predicate p;
-    public FilterEnumerator(IEnumerable src, Predicate p) {
+class FilterEnumerator<T> : IEnumerator, IEnumerator<T> {
+    IEnumerator<T> srcIter;
+    Predicate<T> p;
+    public FilterEnumerator(IEnumerable<T> src, Predicate<T> p) {
         this.srcIter = src.GetEnumerator();
         this.p = p;
     }
     public bool MoveNext() {
         while(srcIter.MoveNext()) {
-            if(p(srcIter.Current))
+            if(p((T) srcIter.Current))
                 return true;
         }
         return false;
     }
-    public object Current {
+    object IEnumerator.Current {
         get { return srcIter.Current; }
     }
+    
+    public T Current {
+        get { return srcIter.Current; }
+    }
+    
     public void Reset() {
         srcIter.Reset();
+    }
+    public void Dispose() {
+        srcIter.Dispose();
     }
 }
 
@@ -111,10 +133,10 @@ class DistinctEnumerator : IEnumerator
 }
 
 class App {
-    static IEnumerable Lines(string path)
+    static IEnumerable<string> Lines(string path)
     {
         string line;
-        IList res = new ArrayList();
+        List<string> res = new List<string>();
         
         using(StreamReader file = new StreamReader(path)) // <=> try-with resources do Java >= 7
         {
@@ -126,14 +148,14 @@ class App {
         return res;
     }
      
-    static IEnumerable Convert(IEnumerable src, Function mapper) {
-        return new ConvertEnumerable(src, mapper);
+    static IEnumerable<R> Convert<T,R>(IEnumerable<T> src, Function<T,R> mapper) {
+        return new ConvertEnumerable<T,R>(src, mapper);
     }  
     static IEnumerable Distinct(IEnumerable src) {
         return new DistinctEnumerable(src);
     }
-    static IEnumerable Filter(IEnumerable src, Predicate pred) {
-        return new FilterEnumerable(src, pred);
+    static IEnumerable<T> Filter<T>(IEnumerable<T> src, Predicate<T> pred) {
+        return new FilterEnumerable<T>(src, pred);
     }
     
     static void Main()
@@ -142,16 +164,16 @@ class App {
             Distinct(
                 Convert(
                     Filter(
-                        Convert(
+                        Convert<string, Student>(
                             Lines("i41d.txt"),
                             Student.Parse),
                         item => { 
                             // Console.WriteLine("Filter2..." + item); 
-                            return ((Student) item).name.StartsWith("R");
+                            return item.name.StartsWith("R");
                         }),
                     item => { 
                         // Console.WriteLine("Convert..." + item); 
-                        return ((Student) item).name.Split(' ')[0];
+                        return item.name.Split(' ')[0];
                     })
             );
                         
